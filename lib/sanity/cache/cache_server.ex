@@ -76,7 +76,7 @@ defmodule Sanity.Cache.CacheServer do
 
   @doc false
   @impl true
-  def init(_) do
+  def init(nil) do
     {:ok, nil}
   end
 
