@@ -12,12 +12,13 @@ defmodule MyMod do
     fetch_query: ~S'*[_type == "page" && path.current == $key && !(_id in path("drafts.**"))]',
     list_query: ~S'*[_type == "page" && !(_id in path("drafts.**"))]',
     projection: "{ ... }",
-    lookup: [path: & &1.path.current]
+    lookup: [path: [:path, :current]]
 end
 
 defmodule Sanity.CacheTest do
   use ExUnit.Case
 
+  alias Sanity.Cache
   alias Sanity.Cache.{CacheServer, NotFoundError}
   import Mox
 
@@ -28,6 +29,22 @@ defmodule Sanity.CacheTest do
     Application.put_env(:sanity_cache, :sanity_client, MockSanity)
 
     :ok
+  end
+
+  test "child_spec" do
+    assert MyMod.child_spec([]) == %{
+             id: MyMod,
+             start:
+               {Sanity.Cache.Poller, :start_link,
+                [
+                  [
+                    [
+                      fetch_pairs_mfa: {MyMod, :fetch_page_by_path_pairs, []},
+                      table: :page_by_path
+                    ]
+                  ]
+                ]}
+           }
   end
 
   describe "cache table exists" do
@@ -104,5 +121,48 @@ defmodule Sanity.CacheTest do
         MyMod.get_page_by_path!("one")
       end
     end
+  end
+
+  test "fetch_page_by_path_pairs" do
+    Mox.expect(MockSanity, :request!, fn request, [dataset: "production", project_id: "abc"] ->
+      assert request == %Sanity.Request{
+               endpoint: :query,
+               method: :get,
+               query_params: %{
+                 "query" => "*[_type == \"page\" && !(_id in path(\"drafts.**\"))] | { ... }"
+               }
+             }
+
+      %Sanity.Response{
+        body: %{"result" => [%{"_id" => "id_x", "path" => %{"current" => "/my-path"}}]}
+      }
+    end)
+
+    assert MyMod.fetch_page_by_path_pairs() == [
+             {"/my-path", %{_id: "id_x", path: %{current: "/my-path"}}}
+           ]
+  end
+
+  test "fetch_pairs" do
+    Mox.expect(MockSanity, :request!, fn request, [dataset: "production", project_id: "abc"] ->
+      assert request == %Sanity.Request{
+               endpoint: :query,
+               method: :get,
+               query_params: %{
+                 "query" => "*[_type == \"page\" && !(_id in path(\"drafts.**\"))] | { ... }"
+               }
+             }
+
+      %Sanity.Response{
+        body: %{"result" => [%{"_id" => "id_x", "path" => %{"current" => "/my-path"}}]}
+      }
+    end)
+
+    assert Cache.fetch_pairs(
+             config_key: :test_config,
+             projection: "{ ... }",
+             list_query: ~S'*[_type == "page" && !(_id in path("drafts.**"))]',
+             lookup_keys: [:path, :current]
+           ) == [{"/my-path", %{_id: "id_x", path: %{current: "/my-path"}}}]
   end
 end

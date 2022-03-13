@@ -8,6 +8,7 @@ defmodule Sanity.Cache.Application do
   @impl true
   def start(_type, _args) do
     children = [
+      {Task.Supervisor, name: Sanity.Cache.TaskSupervisor},
       {Sanity.Cache.CacheServer, name: Sanity.Cache.CacheServer}
     ]
 

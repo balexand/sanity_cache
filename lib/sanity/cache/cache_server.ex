@@ -1,4 +1,9 @@
 defmodule Sanity.Cache.CacheServer do
+  @moduledoc """
+  For caching results in an ETS table. A single instance of this GenServer is started
+  automatically.
+  """
+
   use GenServer
 
   @default_name __MODULE__

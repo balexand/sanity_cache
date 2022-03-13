@@ -4,7 +4,7 @@ defmodule Sanity.Cache do
     quote do
       import Sanity.Cache, only: [defq: 2]
 
-      Module.register_attribute(__MODULE__, :sanity_cache_names, accumulate: true)
+      Module.register_attribute(__MODULE__, :sanity_cache_child_spec_opts, accumulate: true)
 
       @before_compile Sanity.Cache
     end
@@ -13,10 +13,11 @@ defmodule Sanity.Cache do
   @doc false
   defmacro __before_compile__(_env) do
     quote do
-      # FIXME use this data to start pollers; probably return a child spec here that starts a
-      # supervisor containing pollers
-      def child_spec do
-        Enum.reverse(@sanity_cache_names)
+      def child_spec(_) do
+        %{
+          id: __MODULE__,
+          start: {Sanity.Cache.Poller, :start_link, [@sanity_cache_child_spec_opts]}
+        }
       end
     end
   end
@@ -39,16 +40,21 @@ defmodule Sanity.Cache do
                            ]
                          )
 
-  @list_opts_validation Keyword.merge(@common_opts_validation,
-                          list_query: [
-                            type: :string,
-                            required: true
-                          ]
-                        )
+  @list_query_validation [
+    type: :string,
+    required: true
+  ]
 
-  @defq_opts_validation Map.merge(Map.new(@fetch_opts_validation), Map.new(@list_opts_validation))
-                        |> Map.to_list()
-                        |> Keyword.merge(
+  @fetch_pairs_opts_validation Keyword.merge(@common_opts_validation,
+                                 list_query: @list_query_validation,
+                                 lookup_keys: [
+                                   type: {:list, :atom},
+                                   required: true
+                                 ]
+                               )
+
+  @defq_opts_validation Keyword.merge(@fetch_opts_validation,
+                          list_query: @list_query_validation,
                           lookup: [
                             type: :keyword_list,
                             required: true
@@ -56,15 +62,31 @@ defmodule Sanity.Cache do
                         )
 
   @doc """
-  TODO write doc
+  Defines a Sanity query.
+
+  ## Options
+
+  #{NimbleOptions.docs(@defq_opts_validation)}
   """
   defmacro defq(name, opts) when is_atom(name) do
-    Enum.map(Keyword.fetch!(opts, :lookup), fn {lookup_name, _func} ->
+    Enum.map(Keyword.fetch!(opts, :lookup), fn {lookup_name, lookup_keys} ->
       table = :"#{name}_by_#{lookup_name}"
+      fetch_pairs = :"fetch_#{table}_pairs"
 
       quote do
         NimbleOptions.validate!(unquote(opts), unquote(@defq_opts_validation))
-        Module.put_attribute(__MODULE__, :sanity_cache_names, unquote(table))
+
+        Module.put_attribute(__MODULE__, :sanity_cache_child_spec_opts,
+          fetch_pairs_mfa: {__MODULE__, unquote(fetch_pairs), []},
+          table: unquote(table)
+        )
+
+        def unquote(fetch_pairs)() do
+          Sanity.Cache.fetch_pairs(
+            Keyword.take(unquote(opts), Keyword.keys(unquote(@fetch_pairs_opts_validation)))
+            |> Keyword.put(:lookup_keys, unquote(lookup_keys))
+          )
+        end
 
         def unquote(:"get_#{table}")(key) do
           Sanity.Cache.get(
@@ -92,7 +114,8 @@ defmodule Sanity.Cache do
   alias Sanity.Cache.CacheServer
 
   @doc """
-  Gets a single document using cache. Returns `{:ok, value}` or `{:error, :not_found}`.
+  Gets a single document using cache. If the cache table doesn't exist then `fetch/2` will be
+  called. Returns `{:ok, value}` or `{:error, :not_found}`.
   """
   def get(table, key, opts) when is_atom(table) do
     case CacheServer.fetch(table, key) do
@@ -118,7 +141,11 @@ defmodule Sanity.Cache do
   end
 
   @doc """
-  Fetches a single document without cache.
+  Fetches a single document by making a request to the Sanity CMS API. The cache is not used.
+
+  ## Options
+
+  #{NimbleOptions.docs(@fetch_opts_validation)}
   """
   def fetch(key, opts) do
     opts = NimbleOptions.validate!(opts, @fetch_opts_validation)
@@ -126,6 +153,7 @@ defmodule Sanity.Cache do
     config_key = Keyword.fetch!(opts, :config_key)
     fetch_query = Keyword.fetch!(opts, :fetch_query)
     projection = Keyword.fetch!(opts, :projection)
+
     sanity = Application.get_env(:sanity_cache, :sanity_client, Sanity)
 
     Enum.join([fetch_query, projection], " | ")
@@ -140,9 +168,27 @@ defmodule Sanity.Cache do
   end
 
   @doc """
-  Lists all documents without cache.
+  Fetches list of key/value pairs.
+
+  ## Options
+
+  #{NimbleOptions.docs(@fetch_pairs_opts_validation)}
   """
-  def list(_opts) do
-    # FIXME
+  def fetch_pairs(opts) do
+    opts = NimbleOptions.validate!(opts, @fetch_pairs_opts_validation)
+
+    config_key = Keyword.fetch!(opts, :config_key)
+    list_query = Keyword.fetch!(opts, :list_query)
+    lookup_keys = Keyword.fetch!(opts, :lookup_keys)
+    projection = Keyword.fetch!(opts, :projection)
+
+    sanity = Application.get_env(:sanity_cache, :sanity_client, Sanity)
+
+    Enum.join([list_query, projection], " | ")
+    |> Sanity.query()
+    |> sanity.request!(Application.fetch_env!(:sanity_cache, config_key))
+    |> Sanity.result!()
+    |> Sanity.atomize_and_underscore()
+    |> Enum.map(&{get_in(&1, lookup_keys), &1})
   end
 end
