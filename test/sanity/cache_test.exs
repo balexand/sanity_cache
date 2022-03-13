@@ -12,7 +12,6 @@ defmodule MyMod do
     fetch_query: ~S'*[_type == "page" && path.current == $key && !(_id in path("drafts.**"))]',
     list_query: ~S'*[_type == "page" && !(_id in path("drafts.**"))]',
     projection: "{ ... }",
-    # FIXME use key name "path" to name lookup "path_by_name)
     lookup: [path: & &1.path.current]
 end
 

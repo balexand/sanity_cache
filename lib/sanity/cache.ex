@@ -71,8 +71,6 @@ defmodule Sanity.Cache do
 
   alias Sanity.Cache.CacheServer
 
-  # FIXME nimble options for functions; same as defrequest opts except requires :config_key opt
-
   @doc """
   Gets a single document using cache.
   """
