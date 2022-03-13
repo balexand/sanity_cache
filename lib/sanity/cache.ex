@@ -21,18 +21,10 @@ defmodule Sanity.Cache do
     end
   end
 
-  @opts_validation [
+  @common_opts_validation [
     config_key: [
       type: :atom,
       default: :default
-    ],
-    fetch_query: [
-      type: :string,
-      required: true
-    ],
-    list_query: [
-      type: :string,
-      required: true
     ],
     projection: [
       type: :string,
@@ -40,7 +32,23 @@ defmodule Sanity.Cache do
     ]
   ]
 
-  @defq_opts_validation Keyword.merge(@opts_validation,
+  @fetch_opts_validation Keyword.merge(@common_opts_validation,
+                           fetch_query: [
+                             type: :string,
+                             required: true
+                           ]
+                         )
+
+  @list_opts_validation Keyword.merge(@common_opts_validation,
+                          list_query: [
+                            type: :string,
+                            required: true
+                          ]
+                        )
+
+  @defq_opts_validation Map.merge(Map.new(@fetch_opts_validation), Map.new(@list_opts_validation))
+                        |> Map.to_list()
+                        |> Keyword.merge(
                           lookup: [
                             type: :keyword_list,
                             default: []
@@ -59,11 +67,19 @@ defmodule Sanity.Cache do
         Module.put_attribute(__MODULE__, :sanity_cache_names, unquote(table))
 
         def unquote(:"get_#{table}")(key) do
-          Sanity.Cache.get(unquote(table), key, Keyword.drop(unquote(opts), [:lookup]))
+          Sanity.Cache.get(
+            unquote(table),
+            key,
+            Keyword.take(unquote(opts), Keyword.keys(unquote(@fetch_opts_validation)))
+          )
         end
 
         def unquote(:"get_#{table}!")(key) do
-          Sanity.Cache.get!(unquote(table), key, Keyword.drop(unquote(opts), [:lookup]))
+          Sanity.Cache.get!(
+            unquote(table),
+            key,
+            Keyword.take(unquote(opts), Keyword.keys(unquote(@fetch_opts_validation)))
+          )
         end
       end
     end)
@@ -79,7 +95,7 @@ defmodule Sanity.Cache do
   Gets a single document using cache. Returns `{:ok, value}` or `{:error, :not_found}`.
   """
   def get(table, key, opts) when is_atom(table) do
-    opts = NimbleOptions.validate!(opts, @opts_validation)
+    opts = NimbleOptions.validate!(opts, @fetch_opts_validation)
 
     case CacheServer.fetch(table, key) do
       {:error, :no_table} ->
@@ -107,7 +123,7 @@ defmodule Sanity.Cache do
   Fetches a single document without cache.
   """
   def fetch(key, opts) do
-    opts = NimbleOptions.validate!(opts, @opts_validation)
+    opts = NimbleOptions.validate!(opts, @fetch_opts_validation)
 
     config_key = Keyword.fetch!(opts, :config_key)
     fetch_query = Keyword.fetch!(opts, :fetch_query)
