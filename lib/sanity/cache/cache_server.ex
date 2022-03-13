@@ -19,7 +19,7 @@ defmodule Sanity.Cache.CacheServer do
 
   ## Examples
 
-    iex> delete_table(:nonexistent_table)
+    iex> delete_table(:nonexistent_doctest_table)
     {:error, :no_table}
   """
   def delete_table(pid \\ @default_name, table) when is_atom(table) do
