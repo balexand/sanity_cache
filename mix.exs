@@ -1,4 +1,4 @@
-defmodule SanityCache.MixProject do
+defmodule Sanity.Cache.MixProject do
   use Mix.Project
 
   def project do
@@ -15,13 +15,15 @@ defmodule SanityCache.MixProject do
   def application do
     [
       extra_applications: [:logger],
-      mod: {SanityCache.Application, []}
+      mod: {Sanity.Cache.Application, []}
     ]
   end
 
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      {:nimble_options, "~> 0.4.0"},
+      {:sanity, "~> 0.8"},
       {:dialyxir, "~> 1.0", only: [:dev], runtime: false}
     ]
   end
