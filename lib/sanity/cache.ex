@@ -51,7 +51,7 @@ defmodule Sanity.Cache do
                         |> Keyword.merge(
                           lookup: [
                             type: :keyword_list,
-                            default: []
+                            required: true
                           ]
                         )
 
@@ -59,7 +59,7 @@ defmodule Sanity.Cache do
   TODO write doc
   """
   defmacro defq(name, opts) when is_atom(name) do
-    Enum.map(Keyword.get(opts, :lookup, []), fn {lookup_name, _func} ->
+    Enum.map(Keyword.fetch!(opts, :lookup), fn {lookup_name, _func} ->
       table = :"#{name}_by_#{lookup_name}"
 
       quote do
