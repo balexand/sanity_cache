@@ -2,7 +2,7 @@ defmodule Sanity.Cache do
   @doc false
   defmacro __using__([]) do
     quote do
-      import Sanity.Cache, only: [defrequest: 1]
+      import Sanity.Cache, only: [defrequest: 2]
 
       Module.register_attribute(__MODULE__, :sanity_cache_names, accumulate: true)
 
@@ -15,45 +15,79 @@ defmodule Sanity.Cache do
     quote do
       # FIXME use this data to start pollers; probably return a child spec here that starts a
       # supervisor containing pollers
-      def __sanity_cache_names__ do
+      def child_spec do
         Enum.reverse(@sanity_cache_names)
       end
     end
   end
 
+  @opts_validation [
+    config_key: [
+      type: :atom,
+      default: :default
+    ],
+    fetch_query: [
+      type: :string,
+      required: true
+    ],
+    list_query: [
+      type: :string,
+      required: true
+    ],
+    projection: [
+      type: :string,
+      required: true
+    ]
+  ]
+
+  @defrequest_opts_validation Keyword.merge(@opts_validation,
+                                lookup: [
+                                  type: :keyword_list,
+                                  default: []
+                                ]
+                              )
+
   @doc """
   TODO write doc
   """
-  defmacro defrequest(opts) do
-    # FIXME nimble options for opts
-    quote do
-      Module.put_attribute(__MODULE__, :sanity_cache_names, Keyword.fetch!(unquote(opts), :name))
+  defmacro defrequest(name, opts) when is_atom(name) do
+    Enum.map(Keyword.get(opts, :lookup, []), fn {lookup_name, _func} ->
+      table = :"#{name}_by_#{lookup_name}"
 
-      def unquote(Keyword.fetch!(opts, :name))(key) do
-        Sanity.Cache.get(key, unquote(opts))
+      quote do
+        NimbleOptions.validate!(unquote(opts), unquote(@defrequest_opts_validation))
+        Module.put_attribute(__MODULE__, :sanity_cache_names, unquote(table))
+
+        def unquote(:"get_#{table}!")(key) do
+          Sanity.Cache.get!(unquote(table), key, Keyword.drop(unquote(opts), [:lookup]))
+        end
       end
-    end
+    end)
   end
 
   defmodule NotFoundError do
     defexception [:message]
   end
 
+  alias Sanity.Cache.CacheServer
+
   # FIXME nimble options for functions; same as defrequest opts except requires :config_key opt
 
   @doc """
   Gets a single document using cache.
   """
-  def get(key, opts) do
-    name = Keyword.fetch!(opts, :name)
+  def get!(table, key, opts) when is_atom(table) do
+    opts = NimbleOptions.validate!(opts, @opts_validation)
 
-    case Example.Cache.get(name, key) do
-      {:error, :no_data} ->
+    case CacheServer.fetch(table, key) do
+      {:error, :no_table} ->
         fetch(key, opts)
 
+      {:error, :not_found} ->
+        raise NotFoundError, "can't find document in cache with key #{inspect(key)}"
+
       {:ok, result} ->
-        # FIXME handle found and not found
-        result
+        {:ok, result}
     end
   end
 
@@ -61,14 +95,20 @@ defmodule Sanity.Cache do
   Fetches a single document without cache.
   """
   def fetch(key, opts) do
+    opts = NimbleOptions.validate!(opts, @opts_validation)
+
+    config_key = Keyword.fetch!(opts, :config_key)
     fetch_query = Keyword.fetch!(opts, :fetch_query)
     projection = Keyword.fetch!(opts, :projection)
+    sanity = Application.get_env(:sanity_cache, :sanity_client, Sanity)
 
     Enum.join([fetch_query, projection])
     |> Sanity.query(%{key: key})
-    |> request!()
+    |> sanity.request!(Application.fetch_env!(:sanity_cache, config_key))
+    |> Sanity.result!()
+    |> Sanity.atomize_and_underscore()
     |> case do
-      [doc] -> doc
+      [doc] -> {:ok, doc}
       [] -> raise NotFoundError, "can't find document with key #{inspect(key)}"
     end
   end
@@ -77,14 +117,6 @@ defmodule Sanity.Cache do
   Lists all documents without cache.
   """
   def list(_opts) do
-  end
-
-  defp request!(request) do
-    # FIXME Application.fetch_env!(:sanity_cache, config_key); config_key will be name of module
-    # when using macros
-    request
-    |> Sanity.request!(Application.fetch_env!(:example, :sanity))
-    |> Sanity.result!()
-    |> Sanity.atomize_and_underscore()
+    # FIXME
   end
 end

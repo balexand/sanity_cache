@@ -24,7 +24,10 @@ defmodule Sanity.Cache.MixProject do
     [
       {:nimble_options, "~> 0.4.0"},
       {:sanity, "~> 0.8"},
-      {:dialyxir, "~> 1.0", only: [:dev], runtime: false}
+
+      # dev/test
+      {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
+      {:mox, "~> 1.0", only: :test}
     ]
   end
 end
