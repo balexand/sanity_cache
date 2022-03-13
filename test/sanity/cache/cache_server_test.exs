@@ -29,7 +29,7 @@ defmodule Sanity.Cache.CacheServerTest do
     end
   end
 
-  test "creat, replaces, and delete table", %{pid: pid} do
+  test "create, replaces, and delete table", %{pid: pid} do
     assert CacheServer.put_table(pid, :my_table, [{"/", "one"}]) == :ok
 
     assert CacheServer.fetch(pid, :my_table, "/") == {:ok, "one"}
@@ -43,5 +43,11 @@ defmodule Sanity.Cache.CacheServerTest do
     assert CacheServer.delete_table(pid, :my_table) == :ok
 
     assert CacheServer.fetch(pid, :my_table, "anything") == {:error, :no_table}
+  end
+
+  test "create with map", %{pid: pid} do
+    assert CacheServer.put_table(pid, :my_table, %{my_key: "value"}) == :ok
+
+    assert CacheServer.fetch(pid, :my_table, :my_key) == {:ok, "value"}
   end
 end

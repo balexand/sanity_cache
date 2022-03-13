@@ -37,15 +37,21 @@ defmodule Sanity.Cache.CacheServer do
   end
 
   @doc """
-  Creates or replaces a table with the given names. `pairs` must be a list of key value pairs like
-  `[{:my_key, :my_value}]`.
+  Creates or replaces a table with the given names. `pairs` must be a map or a list of key value
+  pairs like `[{:my_key, :my_value}]`.
 
   ## Examples
 
     iex> put_table(:doctest_table, [{"key", "value"}])
     :ok
   """
-  def put_table(pid \\ @default_name, table, pairs) when is_atom(table) and is_list(pairs) do
+  def put_table(pid \\ @default_name, table, pairs)
+
+  def put_table(pid, table, %{} = map) when is_atom(table) do
+    put_table(pid, table, Enum.to_list(map))
+  end
+
+  def put_table(pid, table, pairs) when is_atom(table) and is_list(pairs) do
     GenServer.call(pid, {:put_table, table, pairs})
   end
 
