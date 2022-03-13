@@ -94,7 +94,7 @@ defmodule Sanity.Cache do
   end
 
   @doc """
-  Gets a single document using cache. Raises if not found.
+  Like `get/3` except raises if not found.
   """
   def get!(table, key, opts) do
     case get(table, key, opts) do
