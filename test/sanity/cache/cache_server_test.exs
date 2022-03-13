@@ -1,5 +1,6 @@
 defmodule Sanity.Cache.CacheServerTest do
   use ExUnit.Case, async: true
+  doctest Sanity.Cache.CacheServer, import: true
 
   alias Sanity.Cache.CacheServer
 
@@ -10,7 +11,7 @@ defmodule Sanity.Cache.CacheServerTest do
 
   describe "fetch" do
     setup %{pid: pid} do
-      CacheServer.put(pid, :my_table, [{"/", "home page"}])
+      CacheServer.put_table(pid, :my_table, [{"/", "home page"}])
 
       :ok
     end
@@ -28,15 +29,19 @@ defmodule Sanity.Cache.CacheServerTest do
     end
   end
 
-  test "put", %{pid: pid} do
-    assert CacheServer.put(pid, :my_table, [{"/", "one"}]) == :ok
+  test "creat, replaces, and delete table", %{pid: pid} do
+    assert CacheServer.put_table(pid, :my_table, [{"/", "one"}]) == :ok
 
     assert CacheServer.fetch(pid, :my_table, "/") == {:ok, "one"}
 
     # replace table
-    assert CacheServer.put(pid, :my_table, [{"/two", "two"}]) == :ok
+    assert CacheServer.put_table(pid, :my_table, [{"/two", "two"}]) == :ok
 
     assert CacheServer.fetch(pid, :my_table, "/") == {:error, :not_found}
     assert CacheServer.fetch(pid, :my_table, "/two") == {:ok, "two"}
+
+    assert CacheServer.delete_table(pid, :my_table) == :ok
+
+    assert CacheServer.fetch(pid, :my_table, "anything") == {:error, :no_table}
   end
 end
