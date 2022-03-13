@@ -62,7 +62,17 @@ defmodule Sanity.CacheTest do
     end
 
     test "get_page_by_path fetched and found" do
-      Mox.expect(MockSanity, :request!, fn _, _ ->
+      Mox.expect(MockSanity, :request!, fn request, [dataset: "production", project_id: "abc"] ->
+        assert request == %Sanity.Request{
+                 endpoint: :query,
+                 method: :get,
+                 query_params: %{
+                   "$key" => "\"one\"",
+                   "query" =>
+                     "*[_type == \"page\" && path.current == $key && !(_id in path(\"drafts.**\"))] | { ... }"
+                 }
+               }
+
         %Sanity.Response{body: %{"result" => [%{"_id" => "id_x"}]}}
       end)
 

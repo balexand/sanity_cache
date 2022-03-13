@@ -114,7 +114,7 @@ defmodule Sanity.Cache do
     projection = Keyword.fetch!(opts, :projection)
     sanity = Application.get_env(:sanity_cache, :sanity_client, Sanity)
 
-    Enum.join([fetch_query, projection])
+    Enum.join([fetch_query, projection], " | ")
     |> Sanity.query(%{key: key})
     |> sanity.request!(Application.fetch_env!(:sanity_cache, config_key))
     |> Sanity.result!()
