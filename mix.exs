@@ -36,6 +36,7 @@ defmodule Sanity.Cache.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      {:plug, "~> 1.13"},
       {:nimble_options, "~> 0.4.0"},
       {:sanity, "~> 0.8"},
 

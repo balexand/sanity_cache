@@ -106,6 +106,11 @@ defmodule Sanity.Cache do
 
   defmodule NotFoundError do
     defexception [:message]
+
+    defimpl Plug.Exception do
+      def status(_), do: :not_found
+      def actions(_), do: []
+    end
   end
 
   alias Sanity.Cache.CacheServer
