@@ -95,8 +95,6 @@ defmodule Sanity.Cache do
   Gets a single document using cache. Returns `{:ok, value}` or `{:error, :not_found}`.
   """
   def get(table, key, opts) when is_atom(table) do
-    opts = NimbleOptions.validate!(opts, @fetch_opts_validation)
-
     case CacheServer.fetch(table, key) do
       {:error, :no_table} ->
         fetch(key, opts)
