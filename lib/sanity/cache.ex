@@ -82,26 +82,23 @@ defmodule Sanity.Cache do
         )
 
         def unquote(fetch_pairs)() do
-          Sanity.Cache.fetch_pairs(
+          opts =
             Keyword.take(unquote(opts), Keyword.keys(unquote(@fetch_pairs_opts_validation)))
             |> Keyword.put(:lookup_keys, unquote(lookup_keys))
-          )
+
+          Sanity.Cache.fetch_pairs(opts)
         end
 
         def unquote(:"get_#{table}")(key) do
-          Sanity.Cache.get(
-            unquote(table),
-            key,
-            Keyword.take(unquote(opts), Keyword.keys(unquote(@fetch_opts_validation)))
-          )
+          opts = Keyword.take(unquote(opts), Keyword.keys(unquote(@fetch_opts_validation)))
+
+          Sanity.Cache.get(unquote(table), key, opts)
         end
 
         def unquote(:"get_#{table}!")(key) do
-          Sanity.Cache.get!(
-            unquote(table),
-            key,
-            Keyword.take(unquote(opts), Keyword.keys(unquote(@fetch_opts_validation)))
-          )
+          opts = Keyword.take(unquote(opts), Keyword.keys(unquote(@fetch_opts_validation)))
+
+          Sanity.Cache.get!(unquote(table), key, opts)
         end
       end
     end)
