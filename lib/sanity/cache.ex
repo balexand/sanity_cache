@@ -2,7 +2,7 @@ defmodule Sanity.Cache do
   @doc false
   defmacro __using__([]) do
     quote do
-      import Sanity.Cache, only: [defrequest: 2]
+      import Sanity.Cache, only: [defq: 2]
 
       Module.register_attribute(__MODULE__, :sanity_cache_names, accumulate: true)
 
@@ -40,22 +40,22 @@ defmodule Sanity.Cache do
     ]
   ]
 
-  @defrequest_opts_validation Keyword.merge(@opts_validation,
-                                lookup: [
-                                  type: :keyword_list,
-                                  default: []
-                                ]
-                              )
+  @defq_opts_validation Keyword.merge(@opts_validation,
+                          lookup: [
+                            type: :keyword_list,
+                            default: []
+                          ]
+                        )
 
   @doc """
   TODO write doc
   """
-  defmacro defrequest(name, opts) when is_atom(name) do
+  defmacro defq(name, opts) when is_atom(name) do
     Enum.map(Keyword.get(opts, :lookup, []), fn {lookup_name, _func} ->
       table = :"#{name}_by_#{lookup_name}"
 
       quote do
-        NimbleOptions.validate!(unquote(opts), unquote(@defrequest_opts_validation))
+        NimbleOptions.validate!(unquote(opts), unquote(@defq_opts_validation))
         Module.put_attribute(__MODULE__, :sanity_cache_names, unquote(table))
 
         def unquote(:"get_#{table}!")(key) do

@@ -7,7 +7,7 @@ Mox.defmock(MockSanity, for: Sanity.Behaviour)
 defmodule MyMod do
   use Sanity.Cache
 
-  defrequest :page,
+  defq :page,
     config_key: :test_config,
     fetch_query: ~S'*[_type == "page" && path.current == $key && !(_id in path("drafts.**"))]',
     list_query: ~S'*[_type == "page" && !(_id in path("drafts.**"))]',
