@@ -19,7 +19,7 @@ defmodule Sanity.Cache.MixProject do
         extras: ["README.md"],
         main: "readme",
         source_ref: "v#{@version}",
-        source_url: "https://github.com/balexand/sanity"
+        source_url: "https://github.com/balexand/sanity_cache"
       ]
     ]
   end
