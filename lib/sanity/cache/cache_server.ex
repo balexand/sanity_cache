@@ -19,8 +19,9 @@ defmodule Sanity.Cache.CacheServer do
 
   ## Examples
 
-    iex> delete_table(:nonexistent_doctest_table)
-    {:error, :no_table}
+      iex> delete_table(:nonexistent_doctest_table)
+      {:error, :no_table}
+
   """
   def delete_table(pid \\ @default_name, table) when is_atom(table) do
     GenServer.call(pid, {:delete_table, table})
@@ -42,8 +43,8 @@ defmodule Sanity.Cache.CacheServer do
 
   ## Examples
 
-    iex> put_table(:doctest_table, [{"key", "value"}])
-    :ok
+      iex> put_table(:doctest_table, [{"key", "value"}])
+      :ok
   """
   def put_table(pid \\ @default_name, table, pairs)
 

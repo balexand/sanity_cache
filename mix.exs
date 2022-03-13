@@ -1,13 +1,26 @@
 defmodule Sanity.Cache.MixProject do
   use Mix.Project
 
+  @version "0.1.0"
+
   def project do
     [
       app: :sanity_cache,
-      version: "0.1.0",
+      description: "Experimental caching library for Sanity CMS",
+      version: @version,
       elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      package: [
+        licenses: ["MIT"],
+        links: %{"GitHub" => "https://github.com/balexand/sanity_cache"}
+      ],
+      docs: [
+        extras: ["README.md"],
+        main: "readme",
+        source_ref: "v#{@version}",
+        source_url: "https://github.com/balexand/sanity"
+      ]
     ]
   end
 
@@ -26,6 +39,7 @@ defmodule Sanity.Cache.MixProject do
       {:sanity, "~> 0.8"},
 
       # dev/test
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
       {:mox, "~> 1.0", only: :test}
     ]
