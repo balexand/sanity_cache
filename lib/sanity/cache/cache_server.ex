@@ -34,7 +34,16 @@ defmodule Sanity.Cache.CacheServer do
     * `{:error, :not_found}` if the table exists but doesn't contain the specified key
   """
   def fetch(pid \\ @default_name, table, key) when is_atom(table) do
-    GenServer.call(pid, {:fetch, table, key})
+    case lookup(table, key) do
+      {:error, :no_table} ->
+        # This might be a race conidition where the the GenServer process is running
+        # `replace_table` and is between the ETS delete and rename calls. We should make a request
+        # to the GenServer to get a race condition free result.
+        GenServer.call(pid, {:fetch, table, key})
+
+      result ->
+        result
+    end
   end
 
   @doc """
@@ -83,10 +92,13 @@ defmodule Sanity.Cache.CacheServer do
   end
 
   defp replace_table(table, pairs) do
-    delete_if_exists(table)
+    temp_table = :"#{table}_temp_"
 
-    ^table = :ets.new(table, [:named_table])
-    true = :ets.insert(table, pairs)
+    ^temp_table = :ets.new(temp_table, [:named_table, read_concurrency: true])
+    true = :ets.insert(temp_table, pairs)
+
+    delete_if_exists(table)
+    ^table = :ets.rename(temp_table, table)
   end
 
   defp delete_if_exists(table) do
