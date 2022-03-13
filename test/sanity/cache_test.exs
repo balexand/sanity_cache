@@ -36,12 +36,20 @@ defmodule Sanity.CacheTest do
       :ok
     end
 
+    test "get_page_by_path found in cache" do
+      assert MyMod.get_page_by_path("two") == {:ok, "the value"}
+    end
+
+    test "get_page_by_path not found in cache" do
+      assert MyMod.get_page_by_path("one") == {:error, :not_found}
+    end
+
     test "get_page_by_path! found in cache" do
-      assert MyMod.get_page_by_path!("two") == {:ok, "the value"}
+      assert MyMod.get_page_by_path!("two") == "the value"
     end
 
     test "get_page_by_path! not found in cache" do
-      assert_raise NotFoundError, "can't find document in cache with key \"one\"", fn ->
+      assert_raise NotFoundError, "can't find document with key \"one\"", fn ->
         MyMod.get_page_by_path!("one")
       end
     end
@@ -53,12 +61,28 @@ defmodule Sanity.CacheTest do
       :ok
     end
 
+    test "get_page_by_path fetched and found" do
+      Mox.expect(MockSanity, :request!, fn _, _ ->
+        %Sanity.Response{body: %{"result" => [%{"_id" => "id_x"}]}}
+      end)
+
+      assert MyMod.get_page_by_path("one") == {:ok, %{_id: "id_x"}}
+    end
+
+    test "get_page_by_path fetched and not found" do
+      Mox.expect(MockSanity, :request!, fn _, _ ->
+        %Sanity.Response{body: %{"result" => []}}
+      end)
+
+      assert MyMod.get_page_by_path("one") == {:error, :not_found}
+    end
+
     test "get_page_by_path! fetched and found" do
       Mox.expect(MockSanity, :request!, fn _, _ ->
         %Sanity.Response{body: %{"result" => [%{"_id" => "id_x"}]}}
       end)
 
-      assert MyMod.get_page_by_path!("one") == {:ok, %{_id: "id_x"}}
+      assert MyMod.get_page_by_path!("one") == %{_id: "id_x"}
     end
 
     test "get_page_by_path! fetched and not found" do

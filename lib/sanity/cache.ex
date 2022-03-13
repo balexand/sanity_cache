@@ -58,6 +58,10 @@ defmodule Sanity.Cache do
         NimbleOptions.validate!(unquote(opts), unquote(@defq_opts_validation))
         Module.put_attribute(__MODULE__, :sanity_cache_names, unquote(table))
 
+        def unquote(:"get_#{table}")(key) do
+          Sanity.Cache.get(unquote(table), key, Keyword.drop(unquote(opts), [:lookup]))
+        end
+
         def unquote(:"get_#{table}!")(key) do
           Sanity.Cache.get!(unquote(table), key, Keyword.drop(unquote(opts), [:lookup]))
         end
@@ -72,9 +76,9 @@ defmodule Sanity.Cache do
   alias Sanity.Cache.CacheServer
 
   @doc """
-  Gets a single document using cache.
+  Gets a single document using cache. Returns `{:ok, value}` or `{:error, :not_found}`.
   """
-  def get!(table, key, opts) when is_atom(table) do
+  def get(table, key, opts) when is_atom(table) do
     opts = NimbleOptions.validate!(opts, @opts_validation)
 
     case CacheServer.fetch(table, key) do
@@ -82,10 +86,20 @@ defmodule Sanity.Cache do
         fetch(key, opts)
 
       {:error, :not_found} ->
-        raise NotFoundError, "can't find document in cache with key #{inspect(key)}"
+        {:error, :not_found}
 
       {:ok, result} ->
         {:ok, result}
+    end
+  end
+
+  @doc """
+  Gets a single document using cache. Raises if not found.
+  """
+  def get!(table, key, opts) do
+    case get(table, key, opts) do
+      {:ok, value} -> value
+      {:error, :not_found} -> raise NotFoundError, "can't find document with key #{inspect(key)}"
     end
   end
 
@@ -107,7 +121,7 @@ defmodule Sanity.Cache do
     |> Sanity.atomize_and_underscore()
     |> case do
       [doc] -> {:ok, doc}
-      [] -> raise NotFoundError, "can't find document with key #{inspect(key)}"
+      [] -> {:error, :not_found}
     end
   end
 
