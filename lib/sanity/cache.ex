@@ -4,7 +4,7 @@ defmodule Sanity.Cache do
     quote do
       import Sanity.Cache, only: [defq: 2]
 
-      Module.register_attribute(__MODULE__, :sanity_cache_child_spec_opts, accumulate: true)
+      Module.register_attribute(__MODULE__, :sanity_cache_update_opts, accumulate: true)
 
       @before_compile Sanity.Cache
     end
@@ -16,8 +16,16 @@ defmodule Sanity.Cache do
       def child_spec(_) do
         %{
           id: __MODULE__,
-          start: {Sanity.Cache.Poller, :start_link, [@sanity_cache_child_spec_opts]}
+          start: {Sanity.Cache.Poller, :start_link, [@sanity_cache_update_opts]}
         }
+      end
+
+      def update_all(opts \\ []) do
+        Enum.each(@sanity_cache_update_opts, fn update_opts ->
+          Map.merge(Map.new(opts), Map.new(update_opts))
+          |> Map.to_list()
+          |> Sanity.Cache.update()
+        end)
       end
     end
   end
@@ -76,7 +84,7 @@ defmodule Sanity.Cache do
       quote do
         NimbleOptions.validate!(unquote(opts), unquote(@defq_opts_validation))
 
-        Module.put_attribute(__MODULE__, :sanity_cache_child_spec_opts,
+        Module.put_attribute(__MODULE__, :sanity_cache_update_opts,
           fetch_pairs_mfa: {__MODULE__, unquote(fetch_pairs), []},
           table: unquote(table)
         )
@@ -113,6 +121,7 @@ defmodule Sanity.Cache do
     end
   end
 
+  require Logger
   alias Sanity.Cache.CacheServer
 
   @doc """
@@ -192,5 +201,48 @@ defmodule Sanity.Cache do
     |> Sanity.result!()
     |> Sanity.atomize_and_underscore()
     |> Enum.map(&{get_in(&1, lookup_keys), &1})
+  end
+
+  @update_opts_validation [
+    fetch_pairs_mfa: [
+      type: :mfa,
+      required: true
+    ],
+    table: [
+      type: :atom,
+      required: true
+    ],
+    update_remote_nodes: [
+      type: :boolean,
+      default: false
+    ]
+  ]
+
+  @doc """
+  Updates a cache table.
+
+  ## Options
+
+  #{NimbleOptions.docs(@update_opts_validation)}
+  """
+  def update(opts) do
+    opts = NimbleOptions.validate!(opts, @update_opts_validation)
+
+    update_remote_nodes = Keyword.fetch!(opts, :update_remote_nodes)
+    {module, function_name, args} = Keyword.fetch!(opts, :fetch_pairs_mfa)
+    table = Keyword.fetch!(opts, :table)
+
+    pairs = apply(module, function_name, args)
+
+    if update_remote_nodes do
+      Enum.each(Node.list(), fn node ->
+        Logger.info("updating #{table} on remote node #{inspect(node)}")
+
+        CacheServer.cast_put_table({CacheServer, node}, table, pairs)
+      end)
+    end
+
+    Logger.info("updating #{table} on local node")
+    CacheServer.put_table(table, pairs)
   end
 end
