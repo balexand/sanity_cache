@@ -195,9 +195,13 @@ defmodule Sanity.Cache do
 
     sanity = Application.get_env(:sanity_cache, :sanity_client, Sanity)
 
+    sanity_config =
+      Application.fetch_env!(:sanity_cache, config_key)
+      |> Keyword.put_new(:http_options, receive_timeout: 45_000)
+
     Enum.join([list_query, projection], " | ")
     |> Sanity.query()
-    |> sanity.request!(Application.fetch_env!(:sanity_cache, config_key))
+    |> sanity.request!(sanity_config)
     |> Sanity.result!()
     |> Sanity.atomize_and_underscore()
     |> Enum.map(&{get_in(&1, lookup_keys), &1})

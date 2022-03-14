@@ -121,7 +121,12 @@ defmodule Sanity.CacheTest do
   end
 
   test "fetch_page_by_path_pairs" do
-    Mox.expect(MockSanity, :request!, fn request, [dataset: "production", project_id: "abc"] ->
+    Mox.expect(MockSanity, :request!, fn request,
+                                         [
+                                           http_options: [receive_timeout: 45_000],
+                                           dataset: "production",
+                                           project_id: "abc"
+                                         ] ->
       assert request == %Sanity.Request{
                endpoint: :query,
                method: :get,
@@ -141,7 +146,7 @@ defmodule Sanity.CacheTest do
   end
 
   test "fetch_pairs" do
-    Mox.expect(MockSanity, :request!, fn request, [dataset: "production", project_id: "abc"] ->
+    Mox.expect(MockSanity, :request!, fn request, _ ->
       assert request == %Sanity.Request{
                endpoint: :query,
                method: :get,
