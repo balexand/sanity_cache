@@ -28,6 +28,8 @@ defmodule Sanity.CacheTest do
     Application.put_env(:sanity_cache, :test_config, dataset: "production", project_id: "abc")
     Application.put_env(:sanity_cache, :sanity_client, MockSanity)
 
+    CacheServer.delete_table(:page_by_path)
+
     :ok
   end
 
@@ -73,11 +75,6 @@ defmodule Sanity.CacheTest do
   end
 
   describe "cache table doesn't exist" do
-    setup do
-      CacheServer.delete_table(:page_by_path)
-      :ok
-    end
-
     test "get_page_by_path fetched and found" do
       Mox.expect(MockSanity, :request!, fn request, [dataset: "production", project_id: "abc"] ->
         assert request == %Sanity.Request{
