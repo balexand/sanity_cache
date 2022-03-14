@@ -20,6 +20,19 @@ defmodule Sanity.Cache.CacheServer do
   end
 
   @doc """
+  Like `put_table/3`, except uses `GenServer.cast/2`.
+  """
+  def cast_put_table(pid \\ @default_name, table, pairs)
+
+  def cast_put_table(pid, table, %{} = map) when is_atom(table) do
+    cast_put_table(pid, table, Enum.to_list(map))
+  end
+
+  def cast_put_table(pid, table, pairs) when is_atom(table) and is_list(pairs) do
+    GenServer.cast(pid, {:put_table, table, pairs})
+  end
+
+  @doc """
   Deletes a table if it exists. Returns `:ok` or `{:error, :no_table}`.
 
   ## Examples
@@ -94,6 +107,14 @@ defmodule Sanity.Cache.CacheServer do
     replace_table(table, pairs)
 
     {:reply, :ok, state}
+  end
+
+  @doc false
+  @impl true
+  def handle_cast({:put_table, table, pairs}, state) do
+    replace_table(table, pairs)
+
+    {:noreply, state}
   end
 
   defp replace_table(table, pairs) do

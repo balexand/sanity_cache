@@ -3,27 +3,12 @@ defmodule Sanity.Cache.Poller do
 
   use GenServer
 
-  alias Sanity.Cache.CacheServer
-
-  require Logger
+  alias Sanity.Cache
 
   @interval 120_000
   @task_supervisor Sanity.Cache.TaskSupervisor
 
-  @state_validation [
-    fetch_pairs_mfa: [
-      type: :mfa,
-      required: true
-    ],
-    table: [
-      type: :atom,
-      required: true
-    ]
-  ]
-
   def start_link(state) do
-    state = Enum.map(state, &NimbleOptions.validate!(&1, @state_validation))
-
     GenServer.start_link(__MODULE__, state)
   end
 
@@ -40,13 +25,7 @@ defmodule Sanity.Cache.Poller do
 
     Enum.each(state, fn opts ->
       Task.Supervisor.start_child(@task_supervisor, fn ->
-        {module, function_name, args} = Keyword.fetch!(opts, :fetch_pairs_mfa)
-        table = Keyword.fetch!(opts, :table)
-
-        Logger.info("polling for changes to table #{inspect(table)}")
-
-        pairs = apply(module, function_name, args)
-        CacheServer.put_table(table, pairs)
+        Cache.update(opts)
       end)
     end)
 

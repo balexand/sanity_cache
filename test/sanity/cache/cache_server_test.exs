@@ -50,4 +50,11 @@ defmodule Sanity.Cache.CacheServerTest do
 
     assert CacheServer.fetch(pid, :my_table, :my_key) == {:ok, "value"}
   end
+
+  test "cast_put_table", %{pid: pid} do
+    assert CacheServer.cast_put_table(:casted_table, %{"/" => "home page"})
+    :timer.sleep(500)
+
+    assert CacheServer.fetch(pid, :casted_table, "/") == {:ok, "home page"}
+  end
 end
