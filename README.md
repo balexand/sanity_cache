@@ -30,7 +30,6 @@ You may also want to add `sanity_cache` to your `.formatter.exs` file so that `d
 
 ```elixir
 # config.exs or runtime.exs
-
 config :sanity_cache, :default,
   dataset: "production",
   project_id: "project-id-from-sanity",
@@ -80,6 +79,10 @@ This generates the following functions:
 At this point no caching is taking place. Each call to a function like `MyApp.CMS.get_page_by_path/1` will make a request to the Sanity CMS API.
 
 ### Polling for new content
+
+Add `MyApp.CMS` to start when your application starts. This will fetch content when your application starts and poll for new content every few minutes. Now, functions like `MyApp.CMS.get_page_by_path/1` will get data from the cache instead of making calls to the Sanity CMS API.
+
+A useful trick is to not start this process during development so you will get fetch CMS data every time you refresh the page.
 
 ```elixir
 defmodule MyApp.Application do
