@@ -11,7 +11,7 @@ The package can be installed by adding `sanity_cache` to your list of dependenci
 ```elixir
 def deps do
   [
-    {:sanity_cache, "~> 0.1.0"}
+    {:sanity_cache, "~> 0.4.0"}
   ]
 end
 ```
