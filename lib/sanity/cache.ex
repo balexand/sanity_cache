@@ -55,13 +55,13 @@ defmodule Sanity.Cache do
 
   @fetch_pairs_opts_validation Keyword.merge(@common_opts_validation,
                                  list_query: @list_query_validation,
-                                 lookup_keys: [
+                                 keys: [
                                    type: {:list, :atom},
                                    required: true
                                  ]
                                )
 
-  @defq_opts_validation Keyword.merge(@fetch_opts_validation,
+  @defq_opts_validation Keyword.merge(@common_opts_validation,
                           list_query: @list_query_validation,
                           lookup: [
                             type: :keyword_list,
@@ -77,7 +77,7 @@ defmodule Sanity.Cache do
   #{NimbleOptions.docs(@defq_opts_validation)}
   """
   defmacro defq(name, opts) when is_atom(name) do
-    Enum.map(Keyword.fetch!(opts, :lookup), fn {lookup_name, lookup_keys} ->
+    Enum.map(Keyword.fetch!(opts, :lookup), fn {lookup_name, lookup_opts} ->
       table = :"#{name}_by_#{lookup_name}"
       fetch_pairs = :"fetch_#{table}_pairs"
 
@@ -92,19 +92,23 @@ defmodule Sanity.Cache do
         def unquote(fetch_pairs)() do
           opts =
             Keyword.take(unquote(opts), Keyword.keys(unquote(@fetch_pairs_opts_validation)))
-            |> Keyword.put(:lookup_keys, unquote(lookup_keys))
+            |> Keyword.put(:keys, Keyword.fetch!(unquote(lookup_opts), :keys))
 
           Sanity.Cache.fetch_pairs(opts)
         end
 
         def unquote(:"get_#{table}")(key) do
-          opts = Keyword.take(unquote(opts), Keyword.keys(unquote(@fetch_opts_validation)))
+          opts =
+            Keyword.take(unquote(opts), Keyword.keys(unquote(@fetch_opts_validation)))
+            |> Keyword.put(:fetch_query, Keyword.fetch!(unquote(lookup_opts), :fetch_query))
 
           Sanity.Cache.get(unquote(table), key, opts)
         end
 
         def unquote(:"get_#{table}!")(key) do
-          opts = Keyword.take(unquote(opts), Keyword.keys(unquote(@fetch_opts_validation)))
+          opts =
+            Keyword.take(unquote(opts), Keyword.keys(unquote(@fetch_opts_validation)))
+            |> Keyword.put(:fetch_query, Keyword.fetch!(unquote(lookup_opts), :fetch_query))
 
           Sanity.Cache.get!(unquote(table), key, opts)
         end
@@ -190,7 +194,7 @@ defmodule Sanity.Cache do
 
     config_key = Keyword.fetch!(opts, :config_key)
     list_query = Keyword.fetch!(opts, :list_query)
-    lookup_keys = Keyword.fetch!(opts, :lookup_keys)
+    keys = Keyword.fetch!(opts, :keys)
     projection = Keyword.fetch!(opts, :projection)
 
     sanity = Application.get_env(:sanity_cache, :sanity_client, Sanity)
@@ -204,7 +208,7 @@ defmodule Sanity.Cache do
     |> sanity.request!(sanity_config)
     |> Sanity.result!()
     |> Sanity.atomize_and_underscore()
-    |> Enum.map(&{get_in(&1, lookup_keys), &1})
+    |> Enum.map(&{get_in(&1, keys), &1})
   end
 
   @update_opts_validation [
