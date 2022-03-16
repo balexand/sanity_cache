@@ -21,8 +21,8 @@ You may also want to add `sanity_cache` to your `.formatter.exs` file so that `d
 ```elixir
 # .formatter.exs
 [
-  import_deps: [:sanity_cache]
   # ...
+  import_deps: [:sanity_cache]
 ]
 ```
 
@@ -30,7 +30,28 @@ You may also want to add `sanity_cache` to your `.formatter.exs` file so that `d
 
 ### Basic usage
 
-TODO
+Create a module in your application like:
+
+```elixir
+defmodule MyApp.CMS do
+  use Sanity.Cache
+
+  defq :page,
+    fetch_query: ~S'*[_type == "page" && path.current == $key && !(_id in path("drafts.**"))]',
+    list_query: ~S'*[_type == "page" && !(_id in path("drafts.**"))]',
+    projection: "{ ... }",
+    lookup: [id: [:_id], path: [:path, :current]]
+end
+```
+
+This generates the following functions:
+
+* `MyApp.CMS.child_spec/1`
+* `MyApp.CMS.get_page_by_id/1`
+* `MyApp.CMS.get_page_by_id!/1`
+* `MyApp.CMS.get_page_by_path/1`
+* `MyApp.CMS.get_page_by_path!/1`
+* `MyApp.CMS.update_all/1`
 
 ### Polling for new content
 

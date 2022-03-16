@@ -9,10 +9,14 @@ defmodule MyMod do
 
   defq :page,
     config_key: :test_config,
-    fetch_query: ~S'*[_type == "page" && path.current == $key && !(_id in path("drafts.**"))]',
     list_query: ~S'*[_type == "page" && !(_id in path("drafts.**"))]',
     projection: "{ ... }",
-    lookup: [path: [:path, :current]]
+    lookup: [
+      path: [
+        keys: [:path, :current],
+        fetch_query: ~S'*[_type == "page" && path.current == $key && !(_id in path("drafts.**"))]'
+      ]
+    ]
 end
 
 defmodule Sanity.CacheTest do
@@ -164,7 +168,7 @@ defmodule Sanity.CacheTest do
              config_key: :test_config,
              projection: "{ ... }",
              list_query: ~S'*[_type == "page" && !(_id in path("drafts.**"))]',
-             lookup_keys: [:path, :current]
+             keys: [:path, :current]
            ) == [{"/my-path", %{_id: "id_x", path: %{current: "/my-path"}}}]
   end
 end
