@@ -6,8 +6,7 @@ Opinionated library for caching Sanity CMS content in an ETS table for submillis
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `sanity_cache` to your list of dependencies in `mix.exs`:
+The package can be installed by adding `sanity_cache` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
@@ -17,6 +16,26 @@ def deps do
 end
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at <https://hexdocs.pm/sanity_cache>.
+You may also want to add `sanity_cache` to your `.formatter.exs` file so that `defq` calls are formatted nicely.
+
+```elixir
+# .formatter.exs
+[
+  import_deps: [:sanity_cache]
+  # ...
+]
+```
+
+## Usage
+
+### Basic usage
+
+TODO
+
+### Polling for new content
+
+TODO
+
+### Instantly updating cached content using Sanity webhooks
+
+TODO
