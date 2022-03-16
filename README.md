@@ -102,4 +102,20 @@ defmodule MyApp.Application do
 
 ### Instantly updating cached content using Sanity webhooks
 
-TODO
+If you are fine waiting a few minutes for content changes to be reflected in your app then you are done. But if you want changes to be reflected instantly then you'll need to listen for Sanity webhooks. Here is an example using a Phoenix controller:
+
+```elixir
+defmodule MyAppWeb.SanityWebhookController do
+  use MyAppWeb, :controller
+
+  alias MyApp.CMS
+
+  def update(conn, %{}) do
+    CMS.update_all(update_remote_nodes: true)
+
+    text(conn, "ok")
+  end
+end
+```
+
+Add this controller to your `router.ex` file and [configure Sanity webhooks accordingly](https://www.sanity.io/docs/webhooks).
