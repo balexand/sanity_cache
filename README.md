@@ -26,6 +26,19 @@ You may also want to add `sanity_cache` to your `.formatter.exs` file so that `d
 ]
 ```
 
+## Configuration
+
+```elixir
+# config.exs or runtime.exs
+
+config :sanity_cache, :default,
+  dataset: "production",
+  project_id: "project-id-from-sanity",
+  token: "api-token-with-read-permission"
+```
+
+If you need to connect to mulitiple Sanity CMS datasets then you can use a key other than `:default` and set the `:config_key` opt when calling [`defq`](https://hexdocs.pm/sanity_cache/Sanity.Cache.html#defq/2).
+
 ## Usage
 
 ### Basic usage
@@ -34,13 +47,24 @@ Create a module in your application like:
 
 ```elixir
 defmodule MyApp.CMS do
+  @page_projection "{ ... }"
+
   use Sanity.Cache
 
   defq :page,
-    fetch_query: ~S'*[_type == "page" && path.current == $key && !(_id in path("drafts.**"))]',
     list_query: ~S'*[_type == "page" && !(_id in path("drafts.**"))]',
-    projection: "{ ... }",
-    lookup: [id: [:_id], path: [:path, :current]]
+    projection: @page_projection,
+    lookup: [
+      id: [
+        fetch_query: ~S'*[_type == "page" && _id == $key]',
+        keys: [:_id]
+      ],
+      path: [
+        fetch_query:
+          ~S'*[_type == "page" && path.current == $key && !(_id in path("drafts.**"))]',
+        keys: [:path, :current]
+      ]
+    ]
 end
 ```
 
@@ -53,9 +77,25 @@ This generates the following functions:
 * `MyApp.CMS.get_page_by_path!/1`
 * `MyApp.CMS.update_all/1`
 
+At this point no caching is taking place. Each call to a function like `MyApp.CMS.get_page_by_path/1` will make a request to the Sanity CMS API.
+
 ### Polling for new content
 
-TODO
+```elixir
+defmodule MyApp.Application do
+  use Application
+
+  @impl true
+  def start(_type, _args) do
+    children =
+      [
+        # ...
+        MyApp.CMS
+      ]
+
+    # ...
+  end
+```
 
 ### Instantly updating cached content using Sanity webhooks
 
