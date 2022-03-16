@@ -1,6 +1,8 @@
-# Sanity.Cache
+# `Sanity.Cache`
 
-**TODO: Add description**
+[![Package](https://img.shields.io/badge/-Package-important)](https://hex.pm/packages/sanity_cache) [![Documentation](https://img.shields.io/badge/-Documentation-blueviolet)](https://hexdocs.pm/sanity_cache)
+
+Opinionated library for caching Sanity CMS content in an ETS table for submillisecond response times.
 
 ## Installation
 

@@ -7,7 +7,7 @@ defmodule Sanity.Cache.MixProject do
     [
       app: :sanity_cache,
       description:
-        "Opinionated library for caching Sanity CMS results in an ETS table for submillisecond response times.",
+        "Opinionated library for caching Sanity CMS content in an ETS table for submillisecond response times.",
       version: @version,
       elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
