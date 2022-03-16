@@ -80,7 +80,7 @@ At this point no caching is taking place. Each call to a function like `MyApp.CM
 
 ### Polling for new content
 
-Add `MyApp.CMS` to start when your application starts. This will fetch content when your application starts and poll for new content every few minutes. Now, functions like `MyApp.CMS.get_page_by_path/1` will get data from the cache instead of making calls to the Sanity CMS API.
+Configure `MyApp.CMS` to start when your application starts. This will fetch content when your application starts and poll for new content every few minutes. Now, functions like `MyApp.CMS.get_page_by_path/1` will get data from the cache instead of making calls to the Sanity CMS API.
 
 A useful trick is to not start this process during development so you will get fetch CMS data every time you refresh the page.
 
