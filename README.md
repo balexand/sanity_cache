@@ -118,4 +118,6 @@ defmodule MyAppWeb.SanityWebhookController do
 end
 ```
 
+The `:update_remote_nodes` will result in the updated results being casted to all Erlang nodes (see [`Node.list/0`](https://hexdocs.pm/elixir/Node.html#list/0)) in the cluster, ensuring that the cache is up to date on all nodes. If you run more than one node (server) then you will need to ensure that Erlang clustering is enabled.
+
 Add this controller to your `router.ex` file and [configure Sanity webhooks accordingly](https://www.sanity.io/docs/webhooks).
